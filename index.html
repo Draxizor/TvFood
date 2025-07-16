@@ -148,25 +148,34 @@
 
       const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`;
 
-      const resposta = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Authorization": `token ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: `Atualizando configuração da ${nomeTV}`,
-          content: base64,
-          committer: { name: user, email: "tvfood@ajinomoto.com" }
-        })
-      });
+      const response = await fetch(url);
+      const existingFile = await response.json();
 
-      if (resposta.ok) {
-        alert("✅ Configuração enviada com sucesso!");
+      if (existingFile && existingFile.sha) {
+        // File exists, proceed to update
+        const updateResponse = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: `Atualizando configuração da ${nomeTV}`,
+            content: base64,
+            sha: existingFile.sha,
+            committer: { name: user, email: "tvfood@ajinomoto.com" }
+          })
+        });
+
+        if (updateResponse.ok) {
+          alert("✅ Configuração enviada com sucesso!");
+        } else {
+          const error = await updateResponse.json();
+          alert("❌ Falha ao salvar no GitHub: " + error.message);
+          console.error(error);
+        }
       } else {
-        const erro = await resposta.json();
-        alert("❌ Falha ao salvar no GitHub: " + erro.message);
-        console.error(erro);
+        alert("❌ Arquivo não encontrado no repositório.");
       }
     }
 
