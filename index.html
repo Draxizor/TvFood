@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel de TVs - Divisão Food</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; color: #333; }
+    h1, h2 { margin-bottom: 10px; }
+    label { margin-top: 10px; display: block; font-weight: bold; }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .controls > div { flex: 1; min-width: 180px; }
+    .btn { padding: 10px 15px; background: #007acc; color: #fff; border: none; cursor: pointer; margin-top: 10px; }
+    .btn:hover { background: #005a99; }
+    .small { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Painel de TVs - Divisão Food</h1>
+
+  <div class="controls">
+    <div>
+      <label for="tv">Selecionar TV:</label>
+      <select id="tv">
+        <option value="tv01">tv01</option>
+        <option value="tv02">tv02</option>
+        <option value="tv03">tv03</option>
+      </select>
+    </div>
+    <div>
+      <label for="segundosEntrePaginas">Tempo entre abas (s):</label>
+      <input type="number" id="segundosEntrePaginas" value="30" />
+    </div>
+    <div>
+      <label for="segundosConteudoExtra">Tempo conteúdo extra (s):</label>
+      <input type="number" id="segundosConteudoExtra" value="20" />
+    </div>
+    <div>
+      <label for="timeoutMaximoVideo">Máximo vídeo (s):</label>
+      <input type="number" id="timeoutMaximoVideo" value="30" />
+    </div>
+    <div>
+      <label for="tempoTransicao">Tempo de transição (ms):</label>
+      <input type="number" id="tempoTransicao" value="800" />
+    </div>
+  </div>
+
+  <label for="abas">Abas do Power BI (separadas por vírgula):</label>
+  <textarea id="abas" rows="2">ACC Online,Resumo Mensal,GDD Diário</textarea>
+
+  <h2>Conteúdos Extras</h2>
+  <table id="conteudoTable">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>URL/Cidade</th>
+        <th>Exibir</th>
+        <th>De</th>
+        <th>Até</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="conteudoBody"></tbody>
+  </table>
+  <button class="btn" id="btnAdicionar">+ Adicionar Conteúdo</button>
+  <button class="btn" id="btnSalvar">💾 Salvar Configuração</button>
+
+  <pre id="saida"></pre>
+
+  <script>
+    const tipos = ["powerbi", "imagem", "video", "clima"];
+    const tabela = document.getElementById("conteudoBody");
+
+    function adicionarConteudo(c = {}) {
+      const linha = document.createElement("tr");
+
+      linha.innerHTML = `
+        <td>
+          <select>
+            ${tipos.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join("")}
+          </select>
+        </td>
+        <td><input type="text" value="${c.url || c.cidade || ''}" /></td>
+        <td>
+          <select onchange="this.parentNode.parentNode.querySelectorAll('input[type=date]').forEach(i => i.style.display = this.value === 'intervalo' ? 'inline' : 'none')">
+            <option value="sempre" ${c.exibicao === "intervalo" ? "" : "selected"}>Sempre</option>
+            <option value="intervalo" ${c.exibicao === "intervalo" ? "selected" : ""}>Entre datas</option>
+          </select>
+        </td>
+        <td><input type="date" value="${c.dataInicio || ''}" style="display: ${c.exibicao === 'intervalo' ? 'inline' : 'none'}" /></td>
+        <td><input type="date" value="${c.dataFim || ''}" style="display: ${c.exibicao === 'intervalo' ? 'inline' : 'none'}" /></td>
+        <td><button onclick="this.parentNode.parentNode.remove()">Remover</button></td>
+      `;
+
+      tabela.appendChild(linha);
+    }
+
+    function salvar() {
+      const config = {
+        configuracoes: {
+          segundosEntrePaginas: +document.getElementById("segundosEntrePaginas").value,
+          segundosConteudoExtra: +document.getElementById("segundosConteudoExtra").value,
+          timeoutMaximoVideo: +document.getElementById("timeoutMaximoVideo").value,
+          tempoTransicao: +document.getElementById("tempoTransicao").value,
+          abasPowerBI: document.getElementById("abas").value.split(',').map(s => s.trim()).filter(s => s)
+        },
+        conteudo: []
+      };
+
+      [...tabela.querySelectorAll("tr")].forEach(tr => {
+        const tipo = tr.children[0].querySelector("select").value;
+        const valor = tr.children[1].querySelector("input").value;
+        const exibicao = tr.children[2].querySelector("select").value;
+        const dataInicio = tr.children[3].querySelector("input").value;
+        const dataFim = tr.children[4].querySelector("input").value;
+
+        const item = { tipo, exibicao };
+        if (tipo === "clima") item.cidade = valor;
+        else item.url = valor;
+        if (exibicao === "intervalo") {
+          item.dataInicio = dataInicio;
+          item.dataFim = dataFim;
+        }
+        config.conteudo.push(item);
+      });
+
+      const nomeTV = document.getElementById("tv").value;
+      document.getElementById("saida").textContent = `Copie e salve como ${nomeTV}.json:\n\n` + JSON.stringify(config, null, 2);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("btnAdicionar").addEventListener("click", () => adicionarConteudo());
+      document.getElementById("btnSalvar").addEventListener("click", () => salvar());
+
+      adicionarConteudo({
+        tipo: "imagem",
+        url: "media/exemplo.png",
+        exibicao: "sempre"
+      });
+    });
+  </script>
+</body>
+</html>
