@@ -1,0 +1,25 @@
+{
+  "configuracoes": {
+    "segundosEntrePaginas": 30,
+    "segundosConteudoExtra": 20,
+    "timeoutMaximoVideo": 30,
+    "tempoTransicao": 800,
+    "abasPowerBI": [
+      "ACC Online",
+      "GDD Diário",
+      "Volume ACC"
+    ]
+  },
+  "conteudo": [
+    {
+      "tipo": "powerbi",
+      "exibicao": "sempre",
+      "url": "https://app.powerbi.com/reportEmbed?reportId=63574541-2bb1-48ee-abe0-1bba14f2fdda&autoAuth=true&ctid=ec2f325f-401d-4993-86c8-47c755de81b8"
+    },
+    {
+      "tipo": "imagem",
+      "exibicao": "sempre",
+      "url": "https://ajinomotodobrasil.sharepoint.com/:i:/r/sites/BancodeDados-GDDFood/Prdio%20Mix/Base%20Imagens/arraia.JPG"
+    }
+  ]
+}
