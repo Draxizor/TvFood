@@ -3,166 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel de TVs - Divisão Food</title>
+  <title>Painel de TVs - Salvar no GitHub</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; color: #333; }
-    h1, h2 { margin-bottom: 10px; }
-    label { margin-top: 10px; display: block; font-weight: bold; }
-    input[type="text"], input[type="number"], input[type="date"], select, textarea {
-      width: 100%; padding: 8px; margin: 5px 0 15px 0; box-sizing: border-box;
-    }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #eee; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .controls { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-    .controls > div { flex: 1; min-width: 180px; }
-    .btn { padding: 10px 15px; background: #007acc; color: #fff; border: none; cursor: pointer; margin-top: 10px; }
-    .btn:hover { background: #005a99; }
-    .small { font-size: 12px; color: #666; }
-    #saida { white-space: pre-wrap; background: #fff; padding: 10px; margin-top: 20px; border: 1px solid #ccc; }
+    label, textarea, input, select, button { display: block; margin-bottom: 10px; width: 100%; }
+    button { padding: 10px; background-color: #007acc; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #005fa3; }
+    pre { background: #eee; padding: 10px; }
   </style>
 </head>
 <body>
-  <h1>Painel de TVs - Divisão Food</h1>
+  <h1>Painel de TVs - Salvar Configuração no GitHub</h1>
 
-  <div class="controls">
-    <div>
-      <label for="tv">Selecionar TV:</label>
-      <select id="tv">
-        <option value="tv01">tv01</option>
-        <option value="tv02">tv02</option>
-        <option value="tv03">tv03</option>
-      </select>
-      <button class="btn" id="btnCarregar">🔄 Carregar</button>
-    </div>
-    <div>
-      <label for="segundosEntrePaginas">Tempo entre abas (s):</label>
-      <input type="number" id="segundosEntrePaginas" value="30" />
-    </div>
-    <div>
-      <label for="segundosConteudoExtra">Tempo conteúdo extra (s):</label>
-      <input type="number" id="segundosConteudoExtra" value="20" />
-    </div>
-    <div>
-      <label for="timeoutMaximoVideo">Máximo vídeo (s):</label>
-      <input type="number" id="timeoutMaximoVideo" value="30" />
-    </div>
-    <div>
-      <label for="tempoTransicao">Tempo de transição (ms):</label>
-      <input type="number" id="tempoTransicao" value="800" />
-    </div>
-  </div>
+  <label for="tv">Nome da TV (ex: tv01):</label>
+  <select id="tv">
+    <option value="tv01">tv01</option>
+    <option value="tv02">tv02</option>
+    <option value="tv03">tv03</option>
+  </select>
 
-  <label for="abas">Abas do Power BI (separadas por vírgula):</label>
-  <textarea id="abas" rows="2">ACC Online,Resumo Mensal,GDD Diário</textarea>
+  <label for="config">Conteúdo JSON:</label>
+  <textarea id="config" rows="10">{
+  "configuracoes": {
+    "segundosEntrePaginas": 30,
+    "segundosConteudoExtra": 20,
+    "timeoutMaximoVideo": 30,
+    "tempoTransicao": 800,
+    "abasPowerBI": ["ACC Online", "Resumo Mensal"]
+  },
+  "conteudo": []
+}</textarea>
 
-  <h2>Conteúdos Extras</h2>
-  <table id="conteudoTable">
-    <thead>
-      <tr>
-        <th>Tipo</th>
-        <th>URL/Cidade</th>
-        <th>Exibir</th>
-        <th>De</th>
-        <th>Até</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="conteudoBody"></tbody>
-  </table>
-  <button class="btn" id="btnAdicionar">+ Adicionar Conteúdo</button>
-  <button class="btn" id="btnSalvar">💾 Salvar Configuração</button>
+  <label for="token">Cole aqui seu GitHub Token Pessoal:</label>
+  <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxx" />
 
-  <pre id="saida"></pre>
+  <button onclick="salvarNoGitHub()">Salvar no GitHub</button>
+
+  <pre id="status"></pre>
 
   <script>
-    const tipos = ["powerbi", "imagem", "video", "clima"];
-    const tabela = document.getElementById("conteudoBody");
+    async function salvarNoGitHub() {
+      const token = document.getElementById("token").value.trim();
+      const tv = document.getElementById("tv").value.trim();
+      const conteudo = document.getElementById("config").value;
+      const status = document.getElementById("status");
 
-    function adicionarConteudo(c = {}) {
-      const linha = document.createElement("tr");
-      linha.innerHTML = `
-        <td>
-          <select>
-            ${tipos.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join("")}
-          </select>
-        </td>
-        <td><input type="text" value="${c.url || c.cidade || ''}" /></td>
-        <td>
-          <select onchange="this.parentNode.parentNode.querySelectorAll('input[type=date]').forEach(i => i.style.display = this.value === 'intervalo' ? 'inline' : 'none')">
-            <option value="sempre" ${c.exibicao === "intervalo" ? "" : "selected"}>Sempre</option>
-            <option value="intervalo" ${c.exibicao === "intervalo" ? "selected" : ""}>Entre datas</option>
-          </select>
-        </td>
-        <td><input type="date" value="${c.dataInicio || ''}" style="display: ${c.exibicao === 'intervalo' ? 'inline' : 'none'}" /></td>
-        <td><input type="date" value="${c.dataFim || ''}" style="display: ${c.exibicao === 'intervalo' ? 'inline' : 'none'}" /></td>
-        <td><button onclick="this.parentNode.parentNode.remove()">Remover</button></td>
-      `;
-      tabela.appendChild(linha);
-    }
-
-    async function carregarConfig() {
-      const tv = document.getElementById("tv").value;
-      const url = `https://draxizor.github.io/TvFood/${tv}.json`;
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error("Erro ao buscar JSON");
-        const json = await resp.json();
-
-        document.getElementById("segundosEntrePaginas").value = json.configuracoes.segundosEntrePaginas;
-        document.getElementById("segundosConteudoExtra").value = json.configuracoes.segundosConteudoExtra;
-        document.getElementById("timeoutMaximoVideo").value = json.configuracoes.timeoutMaximoVideo;
-        document.getElementById("tempoTransicao").value = json.configuracoes.tempoTransicao;
-        document.getElementById("abas").value = json.configuracoes.abasPowerBI.join(", ");
-
-        tabela.innerHTML = "";
-        json.conteudo.forEach(c => adicionarConteudo(c));
-        document.getElementById("saida").textContent = `Configuração carregada para ${tv}`;
-      } catch (e) {
-        document.getElementById("saida").textContent = `❌ Erro ao carregar JSON para ${tv}`;
+      if (!token) {
+        alert("Por favor, cole seu GitHub Token pessoal.");
+        return;
       }
-    }
 
-    function salvar() {
-      const config = {
-        configuracoes: {
-          segundosEntrePaginas: +document.getElementById("segundosEntrePaginas").value,
-          segundosConteudoExtra: +document.getElementById("segundosConteudoExtra").value,
-          timeoutMaximoVideo: +document.getElementById("timeoutMaximoVideo").value,
-          tempoTransicao: +document.getElementById("tempoTransicao").value,
-          abasPowerBI: document.getElementById("abas").value.split(',').map(s => s.trim()).filter(s => s)
-        },
-        conteudo: []
-      };
+      const base64Content = btoa(unescape(encodeURIComponent(conteudo)));
+      const repo = "TvFood";
+      const user = "Drazixor";
+      const path = `configs/${tv}.json`;
+      const urlGet = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 
-      [...tabela.querySelectorAll("tr")].forEach(tr => {
-        const tipo = tr.children[0].querySelector("select").value;
-        const valor = tr.children[1].querySelector("input").value;
-        const exibicao = tr.children[2].querySelector("select").value;
-        const dataInicio = tr.children[3].querySelector("input").value;
-        const dataFim = tr.children[4].querySelector("input").value;
+      status.textContent = "Verificando arquivo existente...";
 
-        const item = { tipo, exibicao };
-        if (tipo === "clima") item.cidade = valor;
-        else item.url = valor;
-        if (exibicao === "intervalo") {
-          item.dataInicio = dataInicio;
-          item.dataFim = dataFim;
+      let sha = null;
+      try {
+        const resGet = await fetch(urlGet, {
+          headers: { Authorization: `token ${token}` }
+        });
+        if (resGet.ok) {
+          const data = await resGet.json();
+          sha = data.sha;
         }
-        config.conteudo.push(item);
+      } catch (e) {
+        console.warn("Arquivo novo, não encontrado.");
+      }
+
+      status.textContent = "Enviando arquivo para o GitHub...";
+
+      const res = await fetch(urlGet, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: `Atualizando config ${tv}`,
+          content: base64Content,
+          sha: sha || undefined
+        })
       });
 
-      const nomeTV = document.getElementById("tv").value;
-      document.getElementById("saida").textContent = `Copie e salve como ${nomeTV}.json em https://github.com/draxizor/TvFood:
-\n\n` + JSON.stringify(config, null, 2);
+      if (res.ok) {
+        status.textContent = `✅ Configuração salva com sucesso em ${path}`;
+      } else {
+        const err = await res.json();
+        status.textContent = `❌ Erro ao salvar: ${err.message}`;
+      }
     }
-
-    document.getElementById("btnAdicionar").addEventListener("click", () => adicionarConteudo());
-    document.getElementById("btnSalvar").addEventListener("click", () => salvar());
-    document.getElementById("btnCarregar").addEventListener("click", () => carregarConfig());
-
-    adicionarConteudo({ tipo: "imagem", url: "media/exemplo.png", exibicao: "sempre" });
   </script>
 </body>
 </html>
