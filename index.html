@@ -20,6 +20,7 @@
     .btn { padding: 10px 15px; background: #007acc; color: #fff; border: none; cursor: pointer; margin-top: 10px; }
     .btn:hover { background: #005a99; }
     .small { font-size: 12px; color: #666; }
+    #saida { white-space: pre-wrap; background: #fff; padding: 10px; margin-top: 20px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
@@ -33,6 +34,7 @@
         <option value="tv02">tv02</option>
         <option value="tv03">tv03</option>
       </select>
+      <button class="btn" id="btnCarregar">🔄 Carregar</button>
     </div>
     <div>
       <label for="segundosEntrePaginas">Tempo entre abas (s):</label>
@@ -80,7 +82,6 @@
 
     function adicionarConteudo(c = {}) {
       const linha = document.createElement("tr");
-
       linha.innerHTML = `
         <td>
           <select>
@@ -98,8 +99,29 @@
         <td><input type="date" value="${c.dataFim || ''}" style="display: ${c.exibicao === 'intervalo' ? 'inline' : 'none'}" /></td>
         <td><button onclick="this.parentNode.parentNode.remove()">Remover</button></td>
       `;
-
       tabela.appendChild(linha);
+    }
+
+    async function carregarConfig() {
+      const tv = document.getElementById("tv").value;
+      const url = `https://draxizor.github.io/TvFood/${tv}.json`;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("Erro ao buscar JSON");
+        const json = await resp.json();
+
+        document.getElementById("segundosEntrePaginas").value = json.configuracoes.segundosEntrePaginas;
+        document.getElementById("segundosConteudoExtra").value = json.configuracoes.segundosConteudoExtra;
+        document.getElementById("timeoutMaximoVideo").value = json.configuracoes.timeoutMaximoVideo;
+        document.getElementById("tempoTransicao").value = json.configuracoes.tempoTransicao;
+        document.getElementById("abas").value = json.configuracoes.abasPowerBI.join(", ");
+
+        tabela.innerHTML = "";
+        json.conteudo.forEach(c => adicionarConteudo(c));
+        document.getElementById("saida").textContent = `Configuração carregada para ${tv}`;
+      } catch (e) {
+        document.getElementById("saida").textContent = `❌ Erro ao carregar JSON para ${tv}`;
+      }
     }
 
     function salvar() {
@@ -132,19 +154,15 @@
       });
 
       const nomeTV = document.getElementById("tv").value;
-      document.getElementById("saida").textContent = `Copie e salve como ${nomeTV}.json:\n\n` + JSON.stringify(config, null, 2);
+      document.getElementById("saida").textContent = `Copie e salve como ${nomeTV}.json em https://github.com/draxizor/TvFood:
+\n\n` + JSON.stringify(config, null, 2);
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("btnAdicionar").addEventListener("click", () => adicionarConteudo());
-      document.getElementById("btnSalvar").addEventListener("click", () => salvar());
+    document.getElementById("btnAdicionar").addEventListener("click", () => adicionarConteudo());
+    document.getElementById("btnSalvar").addEventListener("click", () => salvar());
+    document.getElementById("btnCarregar").addEventListener("click", () => carregarConfig());
 
-      adicionarConteudo({
-        tipo: "imagem",
-        url: "media/exemplo.png",
-        exibicao: "sempre"
-      });
-    });
+    adicionarConteudo({ tipo: "imagem", url: "media/exemplo.png", exibicao: "sempre" });
   </script>
 </body>
 </html>
