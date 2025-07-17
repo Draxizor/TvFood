@@ -139,23 +139,24 @@
       const token = prompt("Informe seu token GitHub (ghp_...):");
       if (!token) return alert("Token não informado. A operação foi cancelada.");
 
-      const repo = "TvFood";
-      const user = "Drazixor";
-      const nomeTV = document.getElementById("tv").value;
-      const fileName = `${nomeTV}.json`;  // Removendo a parte "tv-configs/"
-      const conteudo = JSON.stringify(gerarJSON(), null, 2);
-      const base64 = btoa(unescape(encodeURIComponent(conteudo)));
+      const repo = "TvFood"; // Nome do repositório
+      const user = "Drazixor"; // Nome de usuário
+      const nomeTV = document.getElementById("tv").value; // Nome da TV
+      const fileName = `${nomeTV}.json`; // Nome do arquivo (ex: tv01.json)
+      const conteudo = JSON.stringify(gerarJSON(), null, 2); // Geração do conteúdo em formato JSON
+      const base64 = btoa(unescape(encodeURIComponent(conteudo))); // Codificação base64 para envio
 
-      const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`;
+      const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`; // URL da API para criação ou atualização do arquivo
 
       try {
-        // Verificar se o arquivo existe
+        // Verificar se o arquivo já existe
         const response = await fetch(url, { method: 'GET' });
 
         if (response.ok) {
+          // Arquivo encontrado, então atualiza
           const existingFile = await response.json();
           console.log("Arquivo encontrado, atualizando...");
-          // Arquivo encontrado, então atualiza
+
           const updateResponse = await fetch(url, {
             method: "PUT",
             headers: {
@@ -165,7 +166,7 @@
             body: JSON.stringify({
               message: `Atualizando configuração da ${nomeTV}`,
               content: base64,
-              sha: existingFile.sha,  // Inclui o sha para atualizar o arquivo
+              sha: existingFile.sha,  // Incluir sha para atualizar o arquivo existente
               committer: { name: user, email: "tvfood@ajinomoto.com" }
             })
           });
@@ -180,6 +181,7 @@
           }
         } else {
           console.log("Arquivo não encontrado, criando novo...");
+
           // Arquivo não encontrado, então cria um novo
           const createResponse = await fetch(url, {
             method: "PUT",
@@ -211,13 +213,15 @@
 
     async function carregarConfiguracao() {
       const nomeTV = document.getElementById("tv").value;
-      const url = `https://raw.githubusercontent.com/Drazixor/TvFood/main/${nomeTV}.json`; // Alterado para raiz
+      const url = `https://raw.githubusercontent.com/Drazixor/TvFood/main/${nomeTV}.json`;  // Salvando diretamente na raiz
 
       try {
         const resposta = await fetch(url);
         if (!resposta.ok) {
-          throw new Error(`Arquivo não encontrado no repositório: ${url}`);
+          const errorData = await resposta.json();
+          throw new Error(`Arquivo não encontrado. Resposta do GitHub: ${errorData.message}`);
         }
+
         const json = await resposta.json();
 
         document.getElementById("segundosEntrePaginas").value = json.configuracoes.segundosEntrePaginas;
