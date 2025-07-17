@@ -142,20 +142,21 @@
       const repo = "TvFood";
       const user = "Drazixor";
       const nomeTV = document.getElementById("tv").value;
-      const fileName = `tv-configs/${nomeTV}.json`;
+      const fileName = `${nomeTV}.json`;  // Removendo a parte "tv-configs/"
       const conteudo = JSON.stringify(gerarJSON(), null, 2);
       const base64 = btoa(unescape(encodeURIComponent(conteudo)));
 
       const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`;
 
       try {
-        // Verifica se o arquivo existe
+        // Verificar se o arquivo existe
         const response = await fetch(url, { method: 'GET' });
-        
+
         if (response.ok) {
-          // Arquivo existe, então atualiza
           const existingFile = await response.json();
-          await fetch(url, {
+          console.log("Arquivo encontrado, atualizando...");
+          // Arquivo encontrado, então atualiza
+          const updateResponse = await fetch(url, {
             method: "PUT",
             headers: {
               "Authorization": `token ${token}`,
@@ -169,10 +170,18 @@
             })
           });
 
-          alert("✅ Configuração enviada com sucesso!");
+          const updateData = await updateResponse.json();
+          if (updateResponse.ok) {
+            alert("✅ Configuração enviada com sucesso!");
+            console.log("Arquivo atualizado:", updateData);
+          } else {
+            alert(`❌ Erro ao atualizar arquivo: ${updateData.message}`);
+            console.error(updateData);
+          }
         } else {
-          // Arquivo não existe, então cria um novo
-          await fetch(url, {
+          console.log("Arquivo não encontrado, criando novo...");
+          // Arquivo não encontrado, então cria um novo
+          const createResponse = await fetch(url, {
             method: "PUT",
             headers: {
               "Authorization": `token ${token}`,
@@ -185,22 +194,29 @@
             })
           });
 
-          alert("✅ Arquivo criado e enviado com sucesso!");
+          const createData = await createResponse.json();
+          if (createResponse.ok) {
+            alert("✅ Arquivo criado e enviado com sucesso!");
+            console.log("Arquivo criado:", createData);
+          } else {
+            alert(`❌ Erro ao criar arquivo: ${createData.message}`);
+            console.error(createData);
+          }
         }
       } catch (error) {
         alert("❌ Erro ao tentar salvar no GitHub.");
-        console.error(error);
+        console.error("Erro:", error);
       }
     }
 
     async function carregarConfiguracao() {
       const nomeTV = document.getElementById("tv").value;
-      const url = `https://raw.githubusercontent.com/Drazixor/TvFood/main/tv-configs/${nomeTV}.json`;
+      const url = `https://raw.githubusercontent.com/Drazixor/TvFood/main/${nomeTV}.json`; // Alterado para raiz
 
       try {
         const resposta = await fetch(url);
         if (!resposta.ok) {
-          throw new Error("Arquivo não encontrado no repositório.");
+          throw new Error(`Arquivo não encontrado no repositório: ${url}`);
         }
         const json = await resposta.json();
 
@@ -215,8 +231,8 @@
 
         alert("🔄 Configuração carregada com sucesso!");
       } catch (e) {
-        alert("❌ Erro ao carregar configuração.");
-        console.error(e);
+        alert(`❌ Erro ao carregar configuração: ${e.message}`);
+        console.error("Erro:", e);
       }
     }
 
