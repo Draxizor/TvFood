@@ -148,34 +148,47 @@
 
       const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`;
 
-      const response = await fetch(url);
-      const existingFile = await response.json();
+      try {
+        const response = await fetch(url, { method: 'GET' });
+        const existingFile = await response.json();
 
-      if (existingFile && existingFile.sha) {
-        // File exists, proceed to update
-        const updateResponse = await fetch(url, {
-          method: "PUT",
-          headers: {
-            "Authorization": `token ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: `Atualizando configuração da ${nomeTV}`,
-            content: base64,
-            sha: existingFile.sha,
-            committer: { name: user, email: "tvfood@ajinomoto.com" }
-          })
-        });
+        if (response.ok) {
+          // Se o arquivo existir, atualiza
+          await fetch(url, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: `Atualizando configuração da ${nomeTV}`,
+              content: base64,
+              sha: existingFile.sha, // Include the sha to update the file
+              committer: { name: user, email: "tvfood@ajinomoto.com" }
+            })
+          });
 
-        if (updateResponse.ok) {
           alert("✅ Configuração enviada com sucesso!");
         } else {
-          const error = await updateResponse.json();
-          alert("❌ Falha ao salvar no GitHub: " + error.message);
-          console.error(error);
+          // Se o arquivo não existir, cria um novo
+          await fetch(url, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: `Criando configuração para ${nomeTV}`,
+              content: base64,
+              committer: { name: user, email: "tvfood@ajinomoto.com" }
+            })
+          });
+
+          alert("✅ Arquivo criado e enviado com sucesso!");
         }
-      } else {
-        alert("❌ Arquivo não encontrado no repositório.");
+      } catch (error) {
+        alert("❌ Erro ao tentar salvar no GitHub.");
+        console.error(error);
       }
     }
 
@@ -185,16 +198,22 @@
 
       try {
         const resposta = await fetch(url);
+        if (!resposta.ok) {
+          throw new Error("Arquivo não encontrado no repositório.");
+        }
         const json = await resposta.json();
 
+        // Preencher os campos com os dados do JSON
         document.getElementById("segundosEntrePaginas").value = json.configuracoes.segundosEntrePaginas;
         document.getElementById("segundosConteudoExtra").value = json.configuracoes.segundosConteudoExtra;
         document.getElementById("timeoutMaximoVideo").value = json.configuracoes.timeoutMaximoVideo;
         document.getElementById("tempoTransicao").value = json.configuracoes.tempoTransicao;
         document.getElementById("abas").value = json.configuracoes.abasPowerBI.join(", ");
 
+        // Preencher a tabela de conteúdos extras
         tabela.innerHTML = "";
         json.conteudo.forEach(adicionarConteudo);
+
         alert("🔄 Configuração carregada com sucesso!");
       } catch (e) {
         alert("❌ Erro ao carregar configuração.");
