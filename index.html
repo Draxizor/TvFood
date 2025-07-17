@@ -149,11 +149,12 @@
       const url = `https://api.github.com/repos/${user}/${repo}/contents/${fileName}`;
 
       try {
+        // Verifica se o arquivo existe
         const response = await fetch(url, { method: 'GET' });
-        const existingFile = await response.json();
-
+        
         if (response.ok) {
-          // Se o arquivo existir, atualiza
+          // Arquivo existe, então atualiza
+          const existingFile = await response.json();
           await fetch(url, {
             method: "PUT",
             headers: {
@@ -163,14 +164,14 @@
             body: JSON.stringify({
               message: `Atualizando configuração da ${nomeTV}`,
               content: base64,
-              sha: existingFile.sha, // Include the sha to update the file
+              sha: existingFile.sha,  // Inclui o sha para atualizar o arquivo
               committer: { name: user, email: "tvfood@ajinomoto.com" }
             })
           });
 
           alert("✅ Configuração enviada com sucesso!");
         } else {
-          // Se o arquivo não existir, cria um novo
+          // Arquivo não existe, então cria um novo
           await fetch(url, {
             method: "PUT",
             headers: {
@@ -203,14 +204,12 @@
         }
         const json = await resposta.json();
 
-        // Preencher os campos com os dados do JSON
         document.getElementById("segundosEntrePaginas").value = json.configuracoes.segundosEntrePaginas;
         document.getElementById("segundosConteudoExtra").value = json.configuracoes.segundosConteudoExtra;
         document.getElementById("timeoutMaximoVideo").value = json.configuracoes.timeoutMaximoVideo;
         document.getElementById("tempoTransicao").value = json.configuracoes.tempoTransicao;
         document.getElementById("abas").value = json.configuracoes.abasPowerBI.join(", ");
 
-        // Preencher a tabela de conteúdos extras
         tabela.innerHTML = "";
         json.conteudo.forEach(adicionarConteudo);
 
